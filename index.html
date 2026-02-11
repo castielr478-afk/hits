@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BeatLab - Criador de Melodias e Beats</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>🎛️ BeatLab</h1>
+      <p>Crie melodias, programe beats, toque instrumentos e grave sua voz em um só lugar.</p>
+    </header>
+
+    <main>
+      <section class="panel" aria-labelledby="transport-title">
+        <h2 id="transport-title">Transporte</h2>
+        <div class="controls-row">
+          <label for="tempo">Tempo (BPM)</label>
+          <input id="tempo" type="range" min="60" max="180" value="110" />
+          <output id="tempo-value">110</output>
+        </div>
+        <div class="controls-row">
+          <button id="play-btn">▶️ Play</button>
+          <button id="stop-btn">⏹️ Stop</button>
+          <button id="clear-btn">🧹 Limpar Sequência</button>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="drums-title">
+        <h2 id="drums-title">Sequenciador de Beats (16 passos)</h2>
+        <div class="step-legend">
+          <span>Kick</span>
+          <span>Snare</span>
+          <span>Hi-Hat</span>
+          <span>Clap</span>
+        </div>
+        <div id="sequencer" class="sequencer" role="grid" aria-label="Sequenciador de bateria"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="melody-title">
+        <h2 id="melody-title">Melodia e Instrumentos</h2>
+        <div class="controls-row wrap">
+          <label for="instrument">Instrumento</label>
+          <select id="instrument">
+            <option value="sine">Piano Elétrico (Sine)</option>
+            <option value="triangle">Lead Suave (Triangle)</option>
+            <option value="square">Synth Pop (Square)</option>
+            <option value="sawtooth">Bass/Lead (Sawtooth)</option>
+          </select>
+
+          <label for="octave">Oitava</label>
+          <input id="octave" type="number" min="2" max="6" value="4" />
+        </div>
+        <div id="keyboard" class="keyboard" aria-label="Teclado musical virtual"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="pads-title">
+        <h2 id="pads-title">Performance Pads</h2>
+        <p>Dispare one-shots e efeitos ao vivo. Atalhos: teclas 1 a 8.</p>
+        <div id="performance-pads" class="pad-grid" aria-label="Pads de performance"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="record-title">
+        <h2 id="record-title">Gravação de Voz</h2>
+        <p>Use o microfone para gravar vocais, ideias ou samples.</p>
+        <div class="controls-row">
+          <button id="record-btn">🎙️ Iniciar Gravação</button>
+          <button id="stop-record-btn" disabled>⏺️ Parar Gravação</button>
+        </div>
+        <audio id="recording-preview" controls></audio>
+      </section>
+
+      <section class="panel" aria-labelledby="gallery-title">
+        <h2 id="gallery-title">Inspiração Visual</h2>
+        <p>Imagens criativas para entrar no clima de produção.</p>
+        <div class="gallery-grid">
+          <figure class="art-card">
+            <img src="assets/synth-wave.svg" alt="Arte abstrata de ondas sonoras neon" loading="lazy" />
+            <figcaption>Synth Wave</figcaption>
+          </figure>
+          <figure class="art-card">
+            <img src="assets/drum-cosmos.svg" alt="Arte cósmica inspirada em bateria eletrônica" loading="lazy" />
+            <figcaption>Drum Cosmos</figcaption>
+          </figure>
+          <figure class="art-card">
+            <img src="assets/voice-flow.svg" alt="Arte de fluxo vocal com formas orgânicas" loading="lazy" />
+            <figcaption>Voice Flow</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="tips-title">
+        <h2 id="tips-title">Dicas Rápidas</h2>
+        <ul>
+          <li>Ative passos no sequenciador para criar grooves em loop.</li>
+          <li>Toque a melodia no teclado virtual e troque de instrumento.</li>
+          <li>Use os pads para drops, risers e fills ao vivo.</li>
+          <li>Grave sua voz por cima do beat e exporte o áudio gravado pelo player.</li>
+        </ul>
+      </section>
+    </main>
+
+    <footer>
+      <small>Feito com Web Audio API + MediaRecorder.</small>
+    </footer>
+
+    <script src="app.js"></script>
+  </body>
+</html>
