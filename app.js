@@ -1,12 +1,16 @@
 const drumRows = ["kick", "snare", "hihat", "clap"];
 const stepCount = 16;
 const notes = ["C", "D", "E", "F", "G", "A", "B"];
+const projectStorageKey = "beatlab-project-v1";
 
 const tempoEl = document.getElementById("tempo");
 const tempoValueEl = document.getElementById("tempo-value");
 const playBtn = document.getElementById("play-btn");
 const stopBtn = document.getElementById("stop-btn");
 const clearBtn = document.getElementById("clear-btn");
+const saveProjectBtn = document.getElementById("save-project-btn");
+const loadProjectBtn = document.getElementById("load-project-btn");
+const newProjectBtn = document.getElementById("new-project-btn");
 const sequencerEl = document.getElementById("sequencer");
 const keyboardEl = document.getElementById("keyboard");
 const padsEl = document.getElementById("performance-pads");
@@ -14,7 +18,9 @@ const instrumentEl = document.getElementById("instrument");
 const octaveEl = document.getElementById("octave");
 const recordBtn = document.getElementById("record-btn");
 const stopRecordBtn = document.getElementById("stop-record-btn");
+const downloadRecordingBtn = document.getElementById("download-recording-btn");
 const recordingPreviewEl = document.getElementById("recording-preview");
+const statusMessageEl = document.getElementById("status-message");
 
 const sequence = Object.fromEntries(drumRows.map((row) => [row, Array(stepCount).fill(false)]));
 const pads = [
@@ -35,10 +41,18 @@ let nextStepTime = 0;
 let schedulerId;
 let recorder;
 let recordChunks = [];
+let recordedBlob;
+
+function setStatus(message) {
+  statusMessageEl.textContent = message;
+}
 
 function ensureAudio() {
   if (!audioCtx) {
     audioCtx = new AudioContext();
+  }
+  if (audioCtx.state === "suspended") {
+    audioCtx.resume();
   }
 }
 
@@ -132,6 +146,7 @@ function start() {
   currentStep = 0;
   nextStepTime = audioCtx.currentTime + 0.05;
   schedulerId = setInterval(schedule, 25);
+  setStatus(`Tocando em ${tempoEl.value} BPM`);
 }
 
 function stop() {
@@ -139,13 +154,21 @@ function stop() {
   isPlaying = false;
   clearInterval(schedulerId);
   clearStepHighlight();
+  setStatus("Parado.");
+}
+
+function setSequenceUI() {
+  document.querySelectorAll(".step").forEach((stepEl) => {
+    const row = stepEl.dataset.row;
+    const step = Number(stepEl.dataset.step);
+    stepEl.dataset.active = String(sequence[row][step]);
+  });
 }
 
 function clearSequence() {
   drumRows.forEach((row) => sequence[row].fill(false));
-  document.querySelectorAll(".step").forEach((step) => {
-    step.dataset.active = "false";
-  });
+  setSequenceUI();
+  setStatus("Sequência limpa.");
 }
 
 function clearStepHighlight() {
@@ -297,9 +320,81 @@ function createPads() {
     button.addEventListener("click", () => {
       flashPad(button);
       playPad(pad.action);
+      setStatus(`Pad disparado: ${pad.label}`);
     });
     padsEl.appendChild(button);
   });
+}
+
+function getProjectData() {
+  return {
+    tempo: Number(tempoEl.value),
+    instrument: instrumentEl.value,
+    octave: Number(octaveEl.value),
+    sequence,
+  };
+}
+
+function applyProjectData(project) {
+  const safeTempo = Math.min(180, Math.max(60, Number(project.tempo) || 110));
+  tempoEl.value = String(safeTempo);
+  tempoValueEl.value = String(safeTempo);
+
+  if (["sine", "triangle", "square", "sawtooth"].includes(project.instrument)) {
+    instrumentEl.value = project.instrument;
+  }
+
+  octaveEl.value = String(Math.min(6, Math.max(2, Number(project.octave) || 4)));
+
+  drumRows.forEach((row) => {
+    const source = Array.isArray(project.sequence?.[row]) ? project.sequence[row] : [];
+    sequence[row] = Array.from({ length: stepCount }, (_, idx) => Boolean(source[idx]));
+  });
+
+  setSequenceUI();
+}
+
+function saveProject() {
+  localStorage.setItem(projectStorageKey, JSON.stringify(getProjectData()));
+  setStatus("Projeto salvo com sucesso neste navegador.");
+}
+
+function loadProject() {
+  const raw = localStorage.getItem(projectStorageKey);
+  if (!raw) {
+    setStatus("Nenhum projeto salvo encontrado.");
+    return;
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    applyProjectData(parsed);
+    setStatus("Projeto carregado.");
+  } catch (error) {
+    console.error(error);
+    setStatus("Não foi possível carregar o projeto salvo.");
+  }
+}
+
+function newProject() {
+  stop();
+  applyProjectData({
+    tempo: 110,
+    instrument: "sine",
+    octave: 4,
+    sequence: Object.fromEntries(drumRows.map((row) => [row, Array(stepCount).fill(false)])),
+  });
+  setStatus("Novo projeto criado.");
+}
+
+function downloadRecording() {
+  if (!recordedBlob) return;
+  const url = URL.createObjectURL(recordedBlob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `beatlab-gravacao-${Date.now()}.webm`;
+  anchor.click();
+  URL.revokeObjectURL(url);
 }
 
 async function startRecording() {
@@ -313,18 +408,23 @@ async function startRecording() {
     });
 
     recorder.addEventListener("stop", () => {
-      const blob = new Blob(recordChunks, { type: "audio/webm" });
-      recordingPreviewEl.src = URL.createObjectURL(blob);
+      recordedBlob = new Blob(recordChunks, { type: "audio/webm" });
+      recordingPreviewEl.src = URL.createObjectURL(recordedBlob);
+      downloadRecordingBtn.disabled = false;
       stream.getTracks().forEach((track) => track.stop());
+      setStatus("Gravação finalizada e pronta para download.");
     });
 
     recorder.start();
     recordBtn.disabled = true;
     stopRecordBtn.disabled = false;
+    downloadRecordingBtn.disabled = true;
     recordBtn.textContent = "🎙️ Gravando...";
+    setStatus("Gravação em andamento...");
   } catch (error) {
     alert("Não foi possível acessar o microfone. Verifique as permissões.");
     console.error(error);
+    setStatus("Erro ao iniciar gravação.");
   }
 }
 
@@ -344,10 +444,19 @@ tempoEl.addEventListener("input", () => {
 playBtn.addEventListener("click", start);
 stopBtn.addEventListener("click", stop);
 clearBtn.addEventListener("click", clearSequence);
+saveProjectBtn.addEventListener("click", saveProject);
+loadProjectBtn.addEventListener("click", loadProject);
+newProjectBtn.addEventListener("click", newProject);
 recordBtn.addEventListener("click", startRecording);
 stopRecordBtn.addEventListener("click", stopRecording);
+downloadRecordingBtn.addEventListener("click", downloadRecording);
 
 window.addEventListener("keydown", (event) => {
+  const element = document.activeElement;
+  if (element && ["INPUT", "TEXTAREA", "SELECT"].includes(element.tagName)) {
+    return;
+  }
+
   const normalizedKey = event.key.toLowerCase();
   const noteMap = {
     a: "C",
@@ -368,9 +477,11 @@ window.addEventListener("keydown", (event) => {
     const padButton = document.querySelector(`.pad[data-key='${matchedPad.key}']`);
     if (padButton) flashPad(padButton);
     playPad(matchedPad.action);
+    setStatus(`Pad disparado: ${matchedPad.label}`);
   }
 });
 
 createSequencer();
 createKeyboard();
 createPads();
+loadProject();

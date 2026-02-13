@@ -80,6 +80,16 @@ button:hover {
   border-color: var(--accent);
 }
 
+.status-message {
+  margin: 0.8rem 0 0;
+  font-size: 0.9rem;
+  color: #cfd5ff;
+  background: rgba(123, 123, 255, 0.14);
+  border: 1px solid #4c56a0;
+  border-radius: 9px;
+  padding: 0.4rem 0.6rem;
+}
+
 .sequencer {
   display: grid;
   grid-template-columns: 70px repeat(16, 1fr);
